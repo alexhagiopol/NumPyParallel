@@ -14,6 +14,9 @@ non-vectorizable way was done easily using the `parfor` keyword.
 In this project, I show how to achieve equivalent behavior 
 in Python - albeit with more code.
 
+### Prerequisites
+I used `Python 3.6.5` and `NumPy 1.14.5`.
+
 ### Instructions
 After reading `parallel_demo.py` to understand how to do the parallelization,
 you can experiment with different combinations of array dimensions and
