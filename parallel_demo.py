@@ -24,7 +24,7 @@ def worker_function(my_array_ctypes, start_index, end_index, shape, iterations):
 
 def main():
     """
-    Main pipeline. Read this code to understand how to parallelize worker.
+    Main pipeline. Read this code to understand how to parallelize worker function.
     """
 
     # accept user settings
@@ -34,11 +34,11 @@ def main():
               "Recommended defaults:\n"
               "python3 parallel_demo.py 5000 4096 4096 4")
         exit()
-    iterations = sys.argv[1]
-    rows = sys.argv[2]
-    cols = sys.argv[3]
-    CPUs = sys.argv[4]  # FYI: multiprocessing.cpu_count() returns total number of hyperthreads
-    assert(1 <= CPUs <= 128)
+    iterations = int(sys.argv[1])
+    rows = int(sys.argv[2])
+    cols = int(sys.argv[3])
+    CPUs = int(sys.argv[4])  # FYI: multiprocessing.cpu_count() returns total number of hyperthreads
+    assert(1 <= CPUs)
     print("Starting multiprocessing."
           "\n# Iterations       =", iterations,
           "\nNumpy Array # Rows =", rows,
@@ -59,7 +59,7 @@ def main():
     # spawn multiple processes each of which will execute the worker function on a segment of my_array
     start_time = time.time()
     processes = []
-    segment_size = my_array.shape // CPUs
+    segment_size = my_array.shape[1] // CPUs
     for i in range(0, CPUs):
         start_index = i * segment_size
         if i == CPUs - 1:  # ndarray will not divide evenly by # of CPUs. final segment contains remainder
