@@ -32,7 +32,7 @@ def main():
         print("Incorrect usage. Example:\n"
               "python3 parallel_demo.py #_iterations #_rows #_cols #_CPUs \n"
               "Recommended defaults:\n"
-              "python3 parallel_demo.py 5000 10 10 4")
+              "python3 parallel_demo.py 10000 500 500 4")
         exit()
     iterations = int(sys.argv[1])
     rows = int(sys.argv[2])
