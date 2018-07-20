@@ -19,7 +19,9 @@ def worker_function(my_array_ctypes, shape, iterations):
     my_array.shape = shape
     # do work in a for loop on the array
     for i in range(1, iterations):
-        my_array += 1
+        for r in range(0, my_array.shape[0]):
+            for c in range(0, my_array.shape[1]):
+                my_array[r, c] += 1  # placeholder for your difficult-to-vectorize operation
 
 
 def main():
