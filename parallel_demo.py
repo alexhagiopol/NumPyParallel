@@ -5,7 +5,7 @@ import sys
 import time
 
 
-def worker_function(my_array_ctypes, start_index, end_index, shape, iterations):
+def worker_function(my_array_ctypes, shape, iterations):
     """
     Function that is parallelized to modify a single array in shared memory.
     :param my_array_ctypes: CTypes version of Numpy array
@@ -19,7 +19,7 @@ def worker_function(my_array_ctypes, start_index, end_index, shape, iterations):
     my_array.shape = shape
     # do work in a for loop on the array
     for i in range(1, iterations):
-        my_array[:, start_index:end_index] += 1
+        my_array += 1
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
         print("Incorrect usage. Example:\n"
               "python3 parallel_demo.py #_iterations #_rows #_cols #_CPUs \n"
               "Recommended defaults:\n"
-              "python3 parallel_demo.py 5000 4096 4096 4")
+              "python3 parallel_demo.py 5000 10 10 4")
         exit()
     iterations = int(sys.argv[1])
     rows = int(sys.argv[2])
@@ -47,18 +47,12 @@ def main():
 
     # create array
     my_array = np.zeros((rows, cols))
-    # convert this array to CTypes version in shared memory
-    # reference: http://briansimulator.org/sharing-numpy-arrays-between-processes/
-    size = my_array.size
-    shape = my_array.shape
-    my_array.shape = size
-    my_array_ctypes = sharedctypes.RawArray('d', my_array)
-    my_array = np.frombuffer(my_array_ctypes, dtype=np.float64, count=size)
-    my_array.shape = shape
+    print("Initial array looks like...\n", my_array)
 
     # spawn multiple processes each of which will execute the worker function on a segment of my_array
     start_time = time.time()
     processes = []
+    segment_arrays = []
     segment_size = my_array.shape[1] // CPUs
     for i in range(0, CPUs):
         start_index = i * segment_size
@@ -66,8 +60,21 @@ def main():
             end_index = my_array.shape[1] + 1
         else:
             end_index = (i + 1) * segment_size
-        process = multiprocessing.Process(target=worker_function, args=(my_array_ctypes, start_index, end_index, shape, iterations,))
+
+        # convert this array segment to CTypes version in shared memory
+        # reference: http://briansimulator.org/sharing-numpy-arrays-between-processes/
+        segment_array = np.copy(my_array[:, start_index: end_index])
+        size = segment_array.size
+        shape = segment_array.shape
+        segment_array.shape = size
+        segment_array_ctypes = sharedctypes.RawArray('d', segment_array)
+        segment_array = np.frombuffer(segment_array_ctypes, dtype=np.float64, count=size)
+        segment_array.shape = shape
+
+        # define inputs of worker function
+        process = multiprocessing.Process(target=worker_function, args=(segment_array_ctypes, shape, iterations,))
         processes += [process]
+        segment_arrays += [segment_array]
         print("Spawning parallel process #", i, "operating on column", start_index, "thru", end_index)
     print("Processing. Check your CPU utilization ;)")
 
@@ -77,7 +84,18 @@ def main():
     # wait for all to end before executing more code
     for process in processes:
         process.join()
+
+    # combine the results into a single array
+    for i in range(0, CPUs):
+        start_index = i * segment_size
+        if i == CPUs - 1:  # ndarray will not divide evenly by # of CPUs. final segment contains remainder
+            end_index = my_array.shape[1] + 1
+        else:
+            end_index = (i + 1) * segment_size
+        my_array[:, start_index:end_index] = segment_arrays[i]
+
     end_time = time.time()
+    print("Final array looks like...\n", my_array)
     print("Finished job in", end_time - start_time, "seconds.")
 
 
